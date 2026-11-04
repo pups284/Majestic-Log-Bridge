@@ -127,12 +127,12 @@ async function cleanupOldTempFiles(): Promise<void> {
         const entries = await readdir(TEMP_DIR, { withFileTypes: true });
         const cutoff = Date.now() - MAX_TEMP_AGE_MS;
         await Promise.all(entries
-            .filter(entry => entry.isFile() && entry.name.startsWith("discord_"))
+            .filter(entry => entry.name.startsWith("discord_"))
             .map(async entry => {
                 const path = join(TEMP_DIR, entry.name);
                 try {
                     const { mtimeMs } = await stat(path);
-                    if (mtimeMs < cutoff) await rm(path, { force: true });
+                    if (mtimeMs < cutoff) await rm(path, { recursive: true, force: true });
                 } catch { }
             }));
     } catch { }
@@ -188,10 +188,12 @@ export async function openLogs(
                 throw new Error("total size is too large");
             }
 
-            const path = join(
+            const dir = join(
                 TEMP_DIR,
-                `discord_${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${name}`,
+                `discord_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
             );
+            await mkdir(dir, { recursive: true });
+            const path = join(dir, name);
             await writeFile(path, data);
             totalBytes += data.length;
             files.push({ name, path });
